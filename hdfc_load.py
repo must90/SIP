@@ -1,6 +1,6 @@
 import xlrd
 import psycopg2
-book=xlrd.open_workbook("HDFC1.xls")
+book=xlrd.open_workbook("Monthly Portfolios for July 2020 final_0.xls")
 database=psycopg2.connect(host="localhost",user="postgres",password="root",database="SIP")
 cursor=database.cursor()
 truncate="""truncate table tbl_hdfc_pf"""
@@ -16,12 +16,13 @@ for s in range(1,100):
  hdfc_fund_name=xl_sheet.name
  isin=sheet.cell(r,1).value
  instrument_name=sheet.cell(r,3).value
- print ('---------------------')
- print ('Sheet name: %s' % xl_sheet.name)
- print ('---------------------')
+ #print ('---------------------')
+ #print ('Sheet name: %s' % xl_sheet.name)
+ #print ('---------------------')
  while isin != 'Grand Total':
-  if len(instrument_name)!=0 and len(isin)!=0:
-    print(isin,instrument_name)
+  try:
+   if len(instrument_name)!=0 and len(isin)!=0:
+    #print(isin,instrument_name)
     isin=sheet.cell(r,1).value
     coupon=sheet.cell(r,2).value
     instrument_name=sheet.cell(r,3).value
@@ -34,16 +35,25 @@ for s in range(1,100):
     nav=round(nav,4)
     values=(hdfc_fund_name,isin,coupon,instrument_name,industry_rating,quantity,market_fair_value,nav)
     cursor.execute(insert,values)
-    database.commit()
     r=r+1
     isin=sheet.cell(r,1).value
     instrument_name=sheet.cell(r,3).value
-  else: 
+   else: 
     r=r+1
     isin=sheet.cell(r,1).value
     instrument_name=sheet.cell(r,3).value
- print ("I just imported above HDFC data into SIP DB")
- print ('---------------------')
+  except Exception as e:
+   database.rollback()
+   print ('Failed Sheet name: %s' % xl_sheet.name)
+   print(e)
+   print(isin)
+   print('-----')
+   print('ERROR')
+   print('-----')
+   break
+ database.commit() 
+ #print ("I just imported above HDFC data into SIP DB")
+ #print ('---------------------')
 cursor.close()
 database.commit()
 database.close()
